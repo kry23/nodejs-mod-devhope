@@ -1,12 +1,31 @@
-import fs from 'fs';
+//The luckyDraw function returns a promise. Create a promise chain where the function is called for for each of the players: Joe, Caroline and Sabrina
 
-const fileName = 'test.txt';
-const fileContent = 'Hello World!';
+//Log out the resolved value for each promise and handle any promise rejections in the chain.
 
-fs.writeFile(fileName, fileContent, (err) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-  console.log('File created successfully');
-});
+function luckyDraw(player) {
+  return new Promise((resolve, reject) => {
+    const win = Boolean(Math.round(Math.random()));
+
+    process.nextTick(() => {
+      if (win) {
+        resolve(`${player} won a prize in the draw!`);
+      } else {
+        reject(new Error(`${player} lost the draw.`));
+      }
+    });
+  });
+}
+
+
+const players = ['Joe', 'Caroline', 'Sabrina'];
+
+players.reduce((chain, player) => {
+  return chain.then(() => {
+    return luckyDraw(player).then((result) => {
+      console.log(result);
+    }).catch((err) => {
+      console.error(`${err.message}`);
+    });
+  });
+}, Promise.resolve());
+
