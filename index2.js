@@ -1,3 +1,3 @@
-const hello = require('./index.js');
+import hello from './index.js';
 
 hello('kry23');

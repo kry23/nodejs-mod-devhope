@@ -1,5 +1,5 @@
-function hello(name) {
+const hello = (name)=> {
     console.log(`Hello, ${name}!`);
   }
 
-  module.exports = hello;
+export default hello;
