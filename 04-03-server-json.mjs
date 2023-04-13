@@ -5,11 +5,11 @@ const server = createServer((request, response) => {
 
   response.statusCode = 200;
 
-  response.setHeader("Content-Type", "text/html");
- const myMessage = "I change here";
-  response.end(
-    `<html><body><h1>${myMessage}</h1></body></html>`
-  );
+  response.setHeader("Content-Type", "application/json");
+
+  const jsonResponseBody = JSON.stringify({ location: "Mars" });
+
+  response.end(jsonResponseBody);
 });
 
 server.listen(3000, () => {
