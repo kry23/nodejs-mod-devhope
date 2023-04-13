@@ -1,0 +1,28 @@
+GET http://localhost:3001/api/planets
+
+###
+
+GET http://localhost:3001/api/planets/1
+
+###
+
+POST http://localhost:3001/api/planets
+content-type: application/json
+
+{
+    "name": "sample"
+}
+###
+
+PUT http://localhost:3001/api/planets/1
+
+content-type: application/json
+
+{
+    "name": "samples"
+}
+###
+
+DELETE http://localhost:3001/api/planets/2
+
+###
