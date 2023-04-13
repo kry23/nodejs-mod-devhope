@@ -1,3 +1,3 @@
 const hello = require('./index.js');
 
-hello('John');
+hello('kry23');
