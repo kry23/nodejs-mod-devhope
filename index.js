@@ -1,18 +1,12 @@
-import { writeFileSync } from 'fs';
-import figlet from 'figlet';
+import fs from 'fs';
 
-const message = 'Node JS Module';
-figlet(message, (err, data) => {
+const fileName = 'test.txt';
+const fileContent = 'Hello World!';
+
+fs.writeFile(fileName, fileContent, (err) => {
   if (err) {
     console.error(err);
     return;
   }
-  const readme = `# My Project
-
-This is a really cool project!
-
-${data}`;
-
-  writeFileSync('README.md', readme);
-  console.log('README.md file written successfully');
+  console.log('File created successfully');
 });
