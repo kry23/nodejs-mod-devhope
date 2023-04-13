@@ -16,8 +16,20 @@ function luckyDraw(player) {
   });
 }
 
+// luckyDraw('Joe')
+//   .then((result) => console.log(result))
+//   .catch((error) => console.log(error.message));
 
-const players = ['Joe', 'Caroline', 'Sabrina'];
+// luckyDraw('Caroline')
+//   .then((result) => console.log(result))
+//   .catch((error) => console.log(error.message));
+
+// luckyDraw('Sabrina')
+//   .then((result) => console.log(result))
+//   .catch((error) => console.log(error.message));
+
+
+  const players = ['Joe', 'Caroline', 'Sabrina'];
 
 players.reduce((chain, player) => {
   return chain.then(() => {
@@ -28,4 +40,3 @@ players.reduce((chain, player) => {
     });
   });
 }, Promise.resolve());
-
