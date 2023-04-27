@@ -1,41 +1,75 @@
-import express from "express";
-import db from "./db.js";
+import express, { Request, Response } from "express";
+import dotenv from "dotenv";
+import pgPromise, { IDatabase } from "pg-promise";
+import multer from "multer";
 
+// Load environment variables
+dotenv.config();
+
+// Database configuration
+const pgp = pgPromise();
+const connectionString = process.env.DATABASE_URL as string;
+const db: IDatabase<any> = pgp(connectionString);
+
+// Set up Express server
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-app.use(express.json());
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (_req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
-app.get("/planets", async (req, res) => {
+const upload = multer({ storage });
+
+// Database setup function
+async function setupDb() {
+  await db.query("DROP TABLE IF EXISTS planets;");
+  await db.query(
+    `CREATE TABLE planets(
+      id SERIAL NOT NULL PRIMARY KEY,
+      name TEXT NOT NULL,
+      image TEXT
+    );`
+  );
+
+  await db.query("INSERT INTO planets (name) VALUES ('Earth');");
+  await db.query("INSERT INTO planets (name) VALUES ('Mars');");
+}
+
+// Initialize the database and start the server
+(async () => {
+  await setupDb();
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+})();
+
+// Routes
+app.get("/planets", async (_req: Request, res: Response) => {
   const planets = await db.query("SELECT * FROM planets;");
   res.json(planets);
 });
 
-app.get("/planets/:id", async (req, res) => {
-  const { id } = req.params;
-  const planet = await db.oneOrNone("SELECT * FROM planets WHERE id=$1;", [id]);
-  res.json(planet);
-});
+app.post(
+  "/planets/:id/image",
+  upload.single("image"),
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
 
-app.post("/planets", async (req, res) => {
-  const { name } = req.body;
-  await db.query("INSERT INTO planets (name) VALUES ($1);", [name]);
-  res.json({ message: "Planet added." });
-});
+    if (!req.file) {
+      res.status(400).json({ message: "No image file provided." });
+      return;
+    }
 
-app.put("/planets/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  await db.query("UPDATE planets SET name=$2 WHERE id=$1;", [id, name]);
-  res.json({ message: "Planet updated." });
-});
+    const imagePath = req.file.path;
 
-app.delete("/planets/:id", async (req, res) => {
-  const { id } = req.params;
-  await db.query("DELETE FROM planets WHERE id=$1;", [id]);
-  res.json({ message: "Planet deleted." });
-});
-
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`);
-});
+    await db.query("UPDATE planets SET image=$2 WHERE id=$1;", [id, imagePath]);
+    res.json({ message: "Planet image updated." });
+  }
+);
