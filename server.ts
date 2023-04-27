@@ -2,6 +2,10 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import pgPromise, { IDatabase } from "pg-promise";
 import multer from "multer";
+import passport from "passport";
+import passportJWT from "passport-jwt";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 // Load environment variables
 dotenv.config();
@@ -27,19 +31,56 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Set up Passport and JWT strategy
+const JwtStrategy = passportJWT.Strategy;
+const ExtractJwt = passportJWT.ExtractJwt;
+
+const jwtOptions = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: process.env.SECRET,
+};
+
+passport.use(
+  new JwtStrategy(jwtOptions, async (payload, done) => {
+    try {
+      const user = await db.one("SELECT * FROM users WHERE id = $1", [
+        payload.id,
+      ]);
+      if (user) {
+        return done(null, user);
+      }
+      return done(null, false);
+    } catch (error) {
+      return done(error, false);
+    }
+  })
+);
+
+app.use(passport.initialize());
+
 // Database setup function
 async function setupDb() {
   await db.query("DROP TABLE IF EXISTS planets;");
-  await db.query(
-    `CREATE TABLE planets(
+  await db.query(`
+    CREATE TABLE planets(
       id SERIAL NOT NULL PRIMARY KEY,
       name TEXT NOT NULL,
       image TEXT
-    );`
-  );
+    );
+  `);
 
   await db.query("INSERT INTO planets (name) VALUES ('Earth');");
   await db.query("INSERT INTO planets (name) VALUES ('Mars');");
+
+  await db.query("DROP TABLE IF EXISTS users;");
+  await db.query(`
+    CREATE TABLE users (
+      id SERIAL NOT NULL PRIMARY KEY,
+      username TEXT NOT NULL,
+      password TEXT NOT NULL,
+      token TEXT
+    );
+  `);
 }
 
 // Initialize the database and start the server
@@ -50,7 +91,46 @@ async function setupDb() {
   });
 })();
 
+app.use(express.json());
+
 // Routes
+app.post("/register", async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await db.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
+    username,
+    hashedPassword,
+  ]);
+
+  res.status(201).json({ message: "User registered" });
+});
+
+app.post("/login", async (req: Request, res: Response) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await db.one("SELECT * FROM users WHERE username = $1", [
+      username,
+    ]);
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (isValidPassword) {
+      const payload = { id: user.id };
+      const token = jwt.sign(payload, process.env.SECRET as string, {
+        expiresIn: "1h",
+      });
+
+      await db.query("UPDATE users SET token=$2 WHERE id=$1", [user.id, token]);
+      res.json({ message: "Logged in successfully", token });
+    } else {
+      res.status(401).json({ message: "Invalid password" });
+    }
+  } catch (error) {
+    res.status(401).json({ message: "User not found" });
+  }
+});
+
 app.get("/planets", async (_req: Request, res: Response) => {
   const planets = await db.query("SELECT * FROM planets;");
   res.json(planets);
