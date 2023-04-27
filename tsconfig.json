@@ -1,11 +1,14 @@
 {
-    "extends": "@tsconfig/node18/tsconfig.json",
-    "compilerOptions": {
-      "strict": true,
-      "outDir": "./dist",
-      "module": "es6",
-      "target": "ES6"
-    },
-    "include": ["./**/*.ts"],
-    "exclude": ["./src/**/*.test.js"]
-  }
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "./dist",
+    "module": "es6",
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["./src/**/*.test.js"]
+}
